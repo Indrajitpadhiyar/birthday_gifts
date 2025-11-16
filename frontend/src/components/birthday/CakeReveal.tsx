@@ -475,9 +475,7 @@ function ScratchCard() {
                 😂 SOTLU SPECIAL BIRTHDAY EDITION! 😂
               </p>
               <p className="text-sm md:text-lg text-pink-200">
-                You're the CHAMKILA who makes everyone laugh!
                 <br className="hidden md:block" />
-                May your birthday be as hilarious as your memes! 🎭
               </p>
             </motion.div>
           )}
