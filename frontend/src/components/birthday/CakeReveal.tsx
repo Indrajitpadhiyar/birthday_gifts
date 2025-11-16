@@ -121,12 +121,31 @@ function Flame({ position }: { position: [number, number, number] }) {
   );
 }
 
-// Scratch Card Component
+// Responsive Scratch Card Component
 function ScratchCard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isScratching, setIsScratching] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
   const [scratchProgress, setScratchProgress] = useState(0);
+  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 400 });
+
+  // Responsive canvas sizing
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        const width = Math.min(containerWidth - 40, 800); // Max 800px, min 40px padding
+        const height = Math.max(width * 0.5, 300); // Maintain aspect ratio, min height 300px
+        setCanvasSize({ width, height });
+      }
+    };
+
+    updateCanvasSize();
+    window.addEventListener("resize", updateCanvasSize);
+
+    return () => window.removeEventListener("resize", updateCanvasSize);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -135,94 +154,125 @@ function ScratchCard() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Set canvas size
+    // Set canvas size with high DPI
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = 800 * dpr;
-    canvas.height = 400 * dpr;
-    canvas.style.width = "800px";
-    canvas.style.height = "400px";
+    canvas.width = canvasSize.width * dpr;
+    canvas.height = canvasSize.height * dpr;
+    canvas.style.width = `${canvasSize.width}px`;
+    canvas.style.height = `${canvasSize.height}px`;
     ctx.scale(dpr, dpr);
 
     // Draw scratch card
     drawScratchCard(ctx, false);
-  }, []);
+  }, [canvasSize]);
 
   const drawScratchCard = (
     ctx: CanvasRenderingContext2D,
     showMessage: boolean
   ) => {
+    const { width, height } = canvasSize;
+
     // Clear canvas
-    ctx.clearRect(0, 0, 800, 400);
+    ctx.clearRect(0, 0, width, height);
 
     if (!showMessage) {
       // Draw scratchable surface
-      const gradient = ctx.createLinearGradient(0, 0, 800, 400);
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
       gradient.addColorStop(0, "#4A90E2");
       gradient.addColorStop(0.5, "#7B68EE");
       gradient.addColorStop(1, "#FF69B4");
 
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 800, 400);
+      ctx.fillRect(0, 0, width, height);
 
       // Draw scratch pattern
       ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-      for (let i = 0; i < 50; i++) {
-        for (let j = 0; j < 25; j++) {
+      const patternSize = Math.max(8, width / 50);
+      for (let i = 0; i < width / patternSize; i++) {
+        for (let j = 0; j < height / patternSize; j++) {
           if ((i + j) % 2 === 0) {
-            ctx.fillRect(i * 16, j * 16, 8, 8);
+            ctx.fillRect(
+              i * patternSize * 2,
+              j * patternSize * 2,
+              patternSize,
+              patternSize
+            );
           }
         }
       }
 
-      // Draw instructions
-      ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 32px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText("🎉 SCRATCH HERE 🎉", 400, 200);
+      // Draw instructions - responsive font sizes
+      const titleFontSize = Math.max(24, width / 20);
+      const subtitleFontSize = Math.max(14, width / 40);
 
-      ctx.font = "20px Arial";
-      ctx.fillText("Use your finger/mouse to reveal the surprise!", 400, 240);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = `bold ${titleFontSize}px Arial`;
+      ctx.textAlign = "center";
+      ctx.fillText("🎉 SCRATCH HERE 🎉", width / 2, height / 2 - 20);
+
+      ctx.font = `${subtitleFontSize}px Arial`;
+      ctx.fillText(
+        "Use your finger/mouse to reveal the surprise!",
+        width / 2,
+        height / 2 + 20
+      );
     } else {
       // Draw revealed message
-      const gradient = ctx.createLinearGradient(0, 0, 800, 400);
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
       gradient.addColorStop(0, "#FFD700");
       gradient.addColorStop(0.5, "#FF69B4");
       gradient.addColorStop(1, "#BA55D3");
 
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 800, 400);
+      ctx.fillRect(0, 0, width, height);
 
-      // Draw funny birthday message
+      // Draw funny birthday message - responsive font sizes
+      const mainFontSize = Math.max(28, width / 15);
+      const subFontSize = Math.max(18, width / 25);
+      const smallFontSize = Math.max(14, width / 35);
+
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 48px Comic Sans MS";
+      ctx.font = `bold ${mainFontSize}px Comic Sans MS`;
       ctx.textAlign = "center";
-      ctx.fillText("🎂 HAPPY BIRTHDAY SOTLU! 🎂", 400, 120);
+      ctx.fillText("🎂 HAPPY BIRTHDAY SOTLU! 🎂", width / 2, height * 0.3);
 
-      ctx.font = "bold 36px Comic Sans MS";
-      ctx.fillText("You are the CHAMKILA of our group!", 400, 180);
+      ctx.font = `bold ${subFontSize}px Comic Sans MS`;
+      ctx.fillText(
+        "You are the CHAMKILA of our group!",
+        width / 2,
+        height * 0.45
+      );
 
-      ctx.font = "28px Comic Sans MS";
-      ctx.fillText("May your day be as funny as your jokes!", 400, 230);
-      ctx.fillText("Stay blessed, stay CHAMKILA! 😂", 400, 280);
+      ctx.font = `${smallFontSize}px Comic Sans MS`;
+      ctx.fillText(
+        "May your day be as funny as your jokes!",
+        width / 2,
+        height * 0.6
+      );
+      ctx.fillText("Stay blessed, stay CHAMKILA! 😂", width / 2, height * 0.7);
 
       // Draw sparkles
       ctx.fillStyle = "#FFFFFF";
       for (let i = 0; i < 20; i++) {
-        const x = 100 + Math.random() * 600;
-        const y = 50 + Math.random() * 300;
+        const x = 50 + Math.random() * (width - 100);
+        const y = 50 + Math.random() * (height - 100);
         ctx.beginPath();
-        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
         ctx.fill();
       }
     }
   };
 
-  const handleScratchStart = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleScratchStart = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
     setIsScratching(true);
     scratch(e);
   };
 
-  const handleScratchMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleScratchMove = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
     if (!isScratching) return;
     scratch(e);
   };
@@ -231,21 +281,48 @@ function ScratchCard() {
     setIsScratching(false);
   };
 
-  const scratch = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getEventPosition = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+
+    const rect = canvas.getBoundingClientRect();
+
+    if ("touches" in e) {
+      // Touch event
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top,
+      };
+    } else {
+      // Mouse event
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+    }
+  };
+
+  const scratch = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const position = getEventPosition(e);
+    if (!position) return;
+
+    const { x, y } = position;
+    const scratchRadius = Math.max(20, canvasSize.width / 20); // Responsive scratch size
 
     // Clear a circle at the scratch position
     ctx.globalCompositeOperation = "destination-out";
     ctx.beginPath();
-    ctx.arc(x, y, 30, 0, Math.PI * 2);
+    ctx.arc(x, y, scratchRadius, 0, Math.PI * 2);
     ctx.fill();
 
     // Check scratch progress
@@ -285,9 +362,6 @@ function ScratchCard() {
         origin: { y: 0.6 },
         colors: ["#FFD700", "#FF69B4", "#00FF00", "#FF0000"],
       });
-
-      // Play sound effect (you can add actual sound here)
-      console.log("🎉 Scratch card revealed!");
     }
   };
 
@@ -304,16 +378,19 @@ function ScratchCard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-pink-800 to-rose-900 flex items-center justify-center p-8">
+    <div
+      ref={containerRef}
+      className="min-h-screen bg-gradient-to-br from-purple-900 via-pink-800 to-rose-900 flex items-center justify-center p-4 md:p-8"
+    >
       <motion.div
         className="w-full max-w-4xl mx-auto"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1 }}
       >
-        <div className="rounded-3xl p-8 border-2 border-pink-400/30 shadow-[0_0_60px_rgba(255,105,180,0.6)] bg-black/40 backdrop-blur-3xl">
+        <div className="rounded-3xl p-4 md:p-8 border-2 border-pink-400/30 shadow-[0_0_60px_rgba(255,105,180,0.6)] bg-black/40 backdrop-blur-3xl">
           <motion.h3
-            className="text-3xl md:text-5xl font-bold text-center mb-8 text-white"
+            className="text-2xl md:text-4xl lg:text-5xl font-bold text-center mb-4 md:mb-8 text-white px-2"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
@@ -321,29 +398,28 @@ function ScratchCard() {
             🎊 Secret Birthday Message 🎊
           </motion.h3>
 
-          <div className="relative rounded-2xl overflow-hidden border-4 border-gold-400 bg-gradient-to-br from-yellow-200 to-yellow-400 p-2 shadow-2xl">
+          <div className="relative rounded-2xl overflow-hidden border-4 border-yellow-400 bg-gradient-to-br from-yellow-200 to-yellow-400 p-2 shadow-2xl mx-auto max-w-4xl">
             <canvas
               ref={canvasRef}
-              className="w-full h-96 cursor-crosshair touch-none rounded-xl"
+              className="w-full h-auto max-w-full cursor-crosshair touch-none rounded-xl"
               onMouseDown={handleScratchStart}
               onMouseMove={handleScratchMove}
               onMouseUp={handleScratchEnd}
               onMouseLeave={handleScratchEnd}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                handleScratchStart(e as any);
-              }}
-              onTouchMove={(e) => {
-                e.preventDefault();
-                handleScratchMove(e as any);
-              }}
+              onTouchStart={handleScratchStart}
+              onTouchMove={handleScratchMove}
               onTouchEnd={handleScratchEnd}
+              style={{
+                width: `${canvasSize.width}px`,
+                height: `${canvasSize.height}px`,
+                maxWidth: "100%",
+              }}
             />
 
             {/* Progress indicator */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-              <div className="bg-black/80 rounded-full px-4 py-2 border border-pink-400/40">
-                <p className="text-white text-sm font-medium">
+            <div className="absolute bottom-2 md:bottom-4 left-1/2 transform -translate-x-1/2">
+              <div className="bg-black/80 rounded-full px-3 md:px-4 py-1 md:py-2 border border-pink-400/40">
+                <p className="text-white text-xs md:text-sm font-medium">
                   Scratched: {Math.round(scratchProgress * 100)}%
                   {isRevealed && " 🎉"}
                 </p>
@@ -354,15 +430,17 @@ function ScratchCard() {
             {!isRevealed && scratchProgress < 0.1 && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <motion.div
-                  className="text-black/80 text-lg text-center px-4 bg-white/80 rounded-2xl py-4 border-2 border-gold-400"
+                  className="text-black/80 text-sm md:text-lg text-center px-3 md:px-4 bg-white/80 rounded-xl md:rounded-2xl py-2 md:py-4 border-2 border-yellow-400 mx-2"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1 }}
                 >
-                  <p className="mb-2 text-xl font-bold">
+                  <p className="mb-1 md:mb-2 text-base md:text-xl font-bold">
                     ✨ Scratch to Reveal ✨
                   </p>
-                  <p>Use your finger or mouse to scratch this card!</p>
+                  <p className="text-xs md:text-base">
+                    Use your finger or mouse to scratch!
+                  </p>
                 </motion.div>
               </div>
             )}
@@ -373,13 +451,13 @@ function ScratchCard() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center mt-6"
+              className="text-center mt-4 md:mt-6"
             >
               <motion.button
                 onClick={resetScratchCard}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-6 py-3 text-lg font-bold rounded-xl border-2 border-pink-400/50 bg-gradient-to-r from-pink-400/20 to-purple-400/20 text-white shadow-lg"
+                className="px-4 md:px-6 py-2 md:py-3 text-base md:text-lg font-bold rounded-xl border-2 border-pink-400/50 bg-gradient-to-r from-pink-400/20 to-purple-400/20 text-white shadow-lg"
               >
                 Scratch Again! 🔄
               </motion.button>
@@ -391,14 +469,14 @@ function ScratchCard() {
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="text-center mt-6 p-6 bg-gradient-to-r from-yellow-400/20 to-pink-400/20 rounded-2xl border-2 border-yellow-400/50"
+              className="text-center mt-4 md:mt-6 p-3 md:p-6 bg-gradient-to-r from-yellow-400/20 to-pink-400/20 rounded-xl md:rounded-2xl border-2 border-yellow-400/50 mx-2"
             >
-              <p className="text-2xl md:text-3xl text-yellow-200 font-bold mb-4">
+              <p className="text-lg md:text-2xl lg:text-3xl text-yellow-200 font-bold mb-2 md:mb-4">
                 😂 SOTLU SPECIAL BIRTHDAY EDITION! 😂
               </p>
-              <p className="text-lg text-pink-200">
+              <p className="text-sm md:text-lg text-pink-200">
                 You're the CHAMKILA who makes everyone laugh!
-                <br />
+                <br className="hidden md:block" />
                 May your birthday be as hilarious as your memes! 🎭
               </p>
             </motion.div>
@@ -406,13 +484,13 @@ function ScratchCard() {
 
           {/* Scratch tips */}
           <motion.div
-            className="text-center mt-6"
+            className="text-center mt-4 md:mt-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: !isRevealed ? 1 : 0 }}
           >
-            <div className="inline-flex flex-col items-center gap-2 bg-black/50 rounded-full px-6 py-3">
-              <p className="text-white/80 text-sm">
-                💡 Tip: Scratch in circular motions for best results!
+            <div className="inline-flex flex-col items-center gap-1 md:gap-2 bg-black/50 rounded-full px-4 md:px-6 py-2 md:py-3 mx-2">
+              <p className="text-white/80 text-xs md:text-sm">
+                💡 Tip: Scratch in circular motions!
               </p>
             </div>
           </motion.div>
@@ -544,7 +622,7 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
   if (!isVisible) return null;
 
   return (
-    <div className="relative">
+    <div className="relative w-full">
       {/* Main Cake Section */}
       <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-purple-900 via-pink-800 to-rose-900">
         {/* Background Animation */}
@@ -560,8 +638,8 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
         )}
 
         {/* 3D Cake */}
-        <div className="absolute inset-0">
-          <Canvas shadows>
+        <div className="absolute inset-0 w-full h-full">
+          <Canvas shadows className="w-full h-full">
             <PerspectiveCamera makeDefault position={[0, 2, 8]} />
             <ambientLight intensity={showMessage ? 0.8 : 0.5} />
             <spotLight
@@ -593,7 +671,7 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
         </div>
 
         {/* Text Overlay */}
-        <div className="relative z-10 text-center pointer-events-none">
+        <div className="relative z-10 text-center pointer-events-none w-full px-4">
           <motion.div
             initial={{ opacity: 0, y: 50, scale: 0.8 }}
             animate={
@@ -611,10 +689,10 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
               bounce: 0.5,
             }}
           >
-            <h2 className="text-6xl md:text-8xl font-bold text-white mb-4 drop-shadow-2xl">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold text-white mb-4 drop-shadow-2xl break-words">
               Make a Wish
             </h2>
-            <p className="text-4xl md:text-5xl">🎂💫</p>
+            <p className="text-3xl sm:text-4xl md:text-5xl">🎂💫</p>
           </motion.div>
 
           {!gyroEnabled && /iPhone|iPad|iPod/.test(navigator.userAgent) && (
@@ -622,13 +700,13 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, type: "spring" }}
-              className="mt-8 pointer-events-auto"
+              className="mt-6 md:mt-8 pointer-events-auto"
             >
               <motion.button
                 onClick={enableGyroscope}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-6 py-3 text-lg md:text-xl font-bold rounded-2xl border-2 border-blue-400/50 bg-gradient-to-r from-blue-400/20 to-purple-400/20 text-white shadow-lg"
+                className="px-4 md:px-6 py-2 md:py-3 text-base md:text-lg lg:text-xl font-bold rounded-2xl border-2 border-blue-400/50 bg-gradient-to-r from-blue-400/20 to-purple-400/20 text-white shadow-lg"
               >
                 Enable Motion Controls 📱
               </motion.button>
@@ -639,14 +717,14 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={showButton ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 0.8, type: "spring" }}
-            className="mt-12 pointer-events-auto"
+            className="mt-8 md:mt-12 pointer-events-auto"
           >
             <motion.button
               onClick={handleCutCake}
               disabled={showMessage || backgroundAnimation}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              className="px-8 py-4 text-xl md:text-2xl font-bold rounded-2xl border-2 border-pink-400/50 bg-gradient-to-r from-pink-400/20 to-rose-400/20 text-white shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 md:px-8 py-3 md:py-4 text-lg md:text-xl lg:text-2xl font-bold rounded-2xl border-2 border-pink-400/50 bg-gradient-to-r from-pink-400/20 to-rose-400/20 text-white shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed w-full max-w-xs md:max-w-none"
             >
               Cut Your Cake 🍰
             </motion.button>
@@ -657,7 +735,7 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1 }}
-              className="mt-6 text-lg md:text-xl text-white/80 font-medium"
+              className="mt-4 md:mt-6 text-base md:text-lg lg:text-xl text-white/80 font-medium px-4"
             >
               📱 Move your phone to rotate the cake
             </motion.div>
@@ -668,9 +746,9 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
               initial={{ opacity: 0, y: 30, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 1, type: "spring", bounce: 0.4 }}
-              className="mt-12 max-w-2xl mx-auto px-4"
+              className="mt-8 md:mt-12 w-full max-w-2xl mx-auto px-2 md:px-4"
             >
-              <div className="rounded-3xl p-8 md:p-12 border-2 border-pink-400/30 bg-black/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
+              <div className="rounded-3xl p-4 md:p-8 lg:p-12 border-2 border-pink-400/30 bg-black/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
                 {["🎉", "💖", "💫", "🕯️", "✨", "🌈", "💝", "🥰", "🎂"].map(
                   (emoji, i) => (
                     <motion.div
@@ -687,7 +765,7 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
                         repeat: Infinity,
                         repeatDelay: 2,
                       }}
-                      className="absolute text-4xl pointer-events-none"
+                      className="absolute text-2xl md:text-4xl pointer-events-none"
                       style={{
                         left: `${10 + i * 10}%`,
                         top: "50%",
@@ -699,18 +777,18 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
                 )}
 
                 <motion.p
-                  className="text-xl md:text-2xl leading-relaxed text-white font-medium relative z-10 text-center"
+                  className="text-lg md:text-xl lg:text-2xl leading-relaxed text-white font-medium relative z-10 text-center"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5, duration: 1 }}
                 >
-                  <span className="block mb-4 text-pink-200">
+                  <span className="block mb-3 md:mb-4 text-pink-200">
                     Happy Birthday, my special one! 🎉💖
                   </span>
-                  <span className="block mb-4 text-purple-200">
+                  <span className="block mb-3 md:mb-4 text-purple-200">
                     Every moment with you is a memory I treasure 💫
                   </span>
-                  <span className="block mb-4 text-rose-200">
+                  <span className="block mb-3 md:mb-4 text-rose-200">
                     May your smile shine brighter than these candles 🕯️✨
                   </span>
                   <span className="block text-fuchsia-200">
