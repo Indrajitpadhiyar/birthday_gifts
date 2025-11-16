@@ -131,6 +131,7 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
   const [showMessage, setShowMessage] = useState(false);
   const [glowIntensity, setGlowIntensity] = useState(0.3);
   const [gyroEnabled, setGyroEnabled] = useState(false);
+  const [backgroundAnimation, setBackgroundAnimation] = useState(false);
   const controlsRef = useRef<any>(null);
 
   useEffect(() => {
@@ -223,8 +224,14 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
   };
 
   const handleCutCake = () => {
-    setShowMessage(true);
-    setGlowIntensity(0.8);
+    // Start circular background animation
+    setBackgroundAnimation(true);
+
+    // Show message after animation completes
+    setTimeout(() => {
+      setShowMessage(true);
+      setGlowIntensity(0.8);
+    }, 1000);
 
     // Confetti burst
     const duration = 2000;
@@ -261,11 +268,71 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
       className="min-h-screen w-full relative flex items-center justify-center overflow-hidden"
       animate={{
         background: showMessage
-          ? "linear-gradient(135deg, hsl(var(--warm-orange)), hsl(var(--glow-gold)))"
+          ? "linear-gradient(135deg, hsl(280, 70%, 15%), hsl(320, 60%, 12%))"
           : "hsl(var(--background))",
       }}
       transition={{ duration: 1.5 }}
     >
+      {/* Circular Background Animation */}
+      {backgroundAnimation && (
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-br from-purple-900/90 via-pink-900/80 to-rose-900/90"
+            initial={{
+              clipPath: "circle(0% at 50% 50%)",
+              opacity: 0,
+            }}
+            animate={{
+              clipPath: "circle(150% at 50% 50%)",
+              opacity: 1,
+            }}
+            transition={{
+              duration: 1.5,
+              ease: "easeOut",
+            }}
+          />
+
+          {/* Animated border ring */}
+          <motion.div
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{
+              duration: 1.2,
+              delay: 0.3,
+              ease: "easeOut",
+            }}
+          >
+            <div className="w-96 h-96 rounded-full border-4 border-pink-400/50 shadow-[0_0_60px_rgba(255,105,180,0.6)]" />
+          </motion.div>
+
+          {/* Floating particles */}
+          {Array.from({ length: 15 }).map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 rounded-full bg-pink-400/60"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{
+                scale: [0, 1, 0],
+                opacity: [0, 1, 0],
+                y: [0, -30, -60],
+                x: [0, (Math.random() - 0.5) * 50, 0],
+              }}
+              transition={{
+                duration: 2,
+                delay: i * 0.1,
+                repeat: Infinity,
+                repeatDelay: 1,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* 3D Cake */}
       <div className="absolute inset-0">
         <Canvas shadows>
@@ -353,7 +420,7 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
         >
           <motion.button
             onClick={handleCutCake}
-            disabled={showMessage}
+            disabled={showMessage || backgroundAnimation}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             className="px-8 py-4 text-xl md:text-2xl font-bold rounded-2xl glass border-2 border-primary/50 bg-gradient-to-r from-primary/20 to-secondary/20 shadow-[0_0_30px_rgba(255,105,180,0.5)] hover:shadow-[0_0_50px_rgba(255,105,180,0.8)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -382,7 +449,7 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
             transition={{ duration: 1, type: "spring", bounce: 0.4 }}
             className="mt-12 max-w-2xl mx-auto px-4"
           >
-            <div className="glass rounded-3xl p-8 md:p-12 border-2 border-primary/30 shadow-[0_0_60px_rgba(255,215,0,0.6)] relative overflow-hidden">
+            <div className="glass rounded-3xl p-8 md:p-12 border-2 border-pink-400/30 shadow-[0_0_60px_rgba(255,105,180,0.6)] relative overflow-hidden backdrop-blur-lg">
               {/* Floating emojis */}
               {["🎉", "💖", "💫", "🕯️", "✨", "🌈", "💝", "🥰", "🎂"].map(
                 (emoji, i) => (
@@ -412,25 +479,25 @@ export default function CakeReveal({ isVisible }: CakeRevealProps) {
               )}
 
               <motion.p
-                className="text-xl md:text-2xl leading-relaxed text-foreground font-medium relative z-10"
+                className="text-xl md:text-2xl leading-relaxed text-white font-medium relative z-10"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5, duration: 1 }}
               >
-                <span className="block mb-4">
+                <span className="block mb-4 text-pink-200">
                   Happy Birthday, my special one! 🎉💖
                 </span>
-                <span className="block mb-4">
+                <span className="block mb-4 text-purple-200">
                   Every moment with you is a memory I treasure 💫
                 </span>
-                <span className="block mb-4">
+                <span className="block mb-4 text-rose-200">
                   May your smile shine brighter than these candles 🕯️✨
                 </span>
-                <span className="block mb-4">
+                <span className="block mb-4 text-fuchsia-200">
                   I hope your day is filled with happiness, love, and magic!
                   🌈💝
                 </span>
-                <span className="block">
+                <span className="block text-white">
                   You deserve all the joy in the world — today and always.
                   🥰🎂✨
                 </span>
